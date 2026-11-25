@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Prolific PL2303 : VID 0x067B = 1659, PID 0x2303 = 8963 (decimal) -->
+    <usb-device vendor-id="1659" product-id="8963" />
+</resources>
