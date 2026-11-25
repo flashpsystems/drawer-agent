@@ -2,7 +2,10 @@ name: Build APK
 
 on:
   push:
-  workflow_dispatch:   # lets you build on-demand from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -16,9 +19,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # The ubuntu-latest runner ships the Android SDK preinstalled
-      # (ANDROID_HOME). Just accept licenses and make sure the needed
-      # platform/build-tools are present.
       - name: Accept licenses & install SDK packages
         run: |
           SDKMGR="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -39,3 +39,20 @@ jobs:
           name: FlashDrawerAgent-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      # Publish the APK onto an orphan branch so it can be fetched over git
+      # (the Actions artifact store is not reachable from the build session).
+      - name: Publish APK to apk-out branch
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/drawer-agent.apk
+          cd "$RUNNER_TEMP"
+          rm -rf pub && mkdir pub && cd pub
+          git init -q
+          git config user.email "actions@github.com"
+          git config user.name "github-actions"
+          git checkout -q -b apk-out
+          cp /tmp/drawer-agent.apk drawer-agent.apk
+          echo "APK built from $GITHUB_SHA on $(date -u)" > BUILD_INFO.txt
+          git add drawer-agent.apk BUILD_INFO.txt
+          git commit -q -m "APK build $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" apk-out
