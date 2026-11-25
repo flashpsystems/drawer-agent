@@ -16,14 +16,17 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+      # The ubuntu-latest runner ships the Android SDK preinstalled
+      # (ANDROID_HOME). Just accept licenses and make sure the needed
+      # platform/build-tools are present.
+      - name: Accept licenses & install SDK packages
+        run: |
+          SDKMGR="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMGR" --licenses >/dev/null 2>&1 || true
+          "$SDKMGR" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
@@ -35,3 +38,4 @@ jobs:
         with:
           name: FlashDrawerAgent-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
